@@ -41,8 +41,8 @@ if TYPE_CHECKING:
 ################################## transactions
 
 COINBASE_MATURITY = 100
-COIN = 100000000
-TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 21000000
+COIN = 0x40000000 #100000000
+TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 6000000000 #21000000
 
 # supported types of transaction outputs
 TYPE_ADDRESS = 0
