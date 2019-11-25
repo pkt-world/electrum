@@ -1137,7 +1137,7 @@ class Transaction:
                     _pubkey = x_pubkey
                 else:
                     continue
-                _logger.info(f"adding signature for {_pubkey}")
+                _logger.info(f"adding signature for {_pubkey} to {i}")
                 sec, compressed = keypairs.get(_pubkey)
                 sig = self.sign_txin(i, sec)
                 self.add_signature_to_txin(i, j, sig)

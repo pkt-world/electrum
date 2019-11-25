@@ -4,15 +4,42 @@ import hashlib
 import getpass
 import json
 import os
+import logging
+from electrum.logging import console_stderr_handler
 from electrum.transaction import Transaction
 from electrum.transaction import tx_from_str
 from electrum import keystore
+from electrum.storage import WalletStorage
+from electrum.wallet import Multisig_Wallet
 
-SEED_FILE = os.path.expanduser("~/pkt_seed_enc.json")
+SEED_FILE = os.environ['SEED_FILE']
 
 ## Testing seed:
 ## kick mouse drill book wagon sudden ship rifle corn patch announce leisure
 ## Zpub6yv5s7ac6bDbCrMxaugzYMX66jDRnxvXgxYrWucUk6L4dc9UUv9RWb581MpfaUE5Bdy9rbUFWsnGVNWFKPLYRyt4weHfTjdEs6Xfm3nCvnQ
+
+## Zpub6yhuP7EAUvHMD93Ceu4PGDE86zAzPGz3ZgWizgV3anasihU2qPPs9ec1U2WntBxuSmEdj42LWrHvB2RX1nFNdfaBJUb5vWgysvFuFkDoLsn
+
+m = 3
+NS_KEYS = [
+    'Zpub6yhuP7EAUvHMD93Ceu4PGDE86zAzPGz3ZgWizgV3anasihU2qPPs9ec1U2WntBxuSmEdj42LWrHvB2RX1nFNdfaBJUb5vWgysvFuFkDoLsn',
+    'Zpub6yt9oJkcseap5mLKarQ7hAK1ULGGAqRuYBgqY198MBmQ2mYpc6w4U9fyCFyniaQbgQcRRGKbbQhcn93dEXZn79dRtxkcB1henE4xAJGAyuh',
+    'Zpub6xjHZeTc5PcMdcwj6rriBAajcGgZ2M9qi9yTcaR9CeM4yUTi7N7xji6sKRyohABmFtMN6KkAhBQheRKQBWawTAXCMBWVGGMiKXj1ku6wZga',
+    'Zpub6ytA3HwmyULpysGgM5bMkCQcVzxxrLBXvGqJdR7VQFGSqDoBNvJFJW5M3ppF3a5xgTU1A3A4mZMXoc7PHtLQaZgLAwfiLJzL6goSJuwLodP',
+    'Zpub6xvbH2BzG22zeXEEBb7kmQtrxPvAFjw7DNKgoVWh1jbPiEtuwV6Y8XaSiSdSh2eAJKBaPA4qgaYzrhtP7nEVemBQk644zu671DyyiL79bvv',
+]
+NS_ADDRESS = "bc1q6hqsqhqdgqfd8t3xwgceulu7k9d9w5t2amath0qxyfjlvl3s3u4st4nj3u"
+def wallet(ks0):
+    ws = WalletStorage("/tmp/fakewallet")
+    ws.put('wallet_type', "%dof%d" % (m, len(NS_KEYS)))
+    ksmp = ks0.get_master_public_key()
+    for i, k in enumerate(NS_KEYS):
+        if ksmp == k:
+            ks = ks0
+        else:
+            ks = keystore.from_master_key(k)
+        ws.put('x%d/' % (i + 1), ks.dump())
+    return Multisig_Wallet(ws)
 
 def password_stretch(password):
     return hashlib.scrypt(
@@ -49,15 +76,23 @@ def combine_transactions(transaction_bin, outfile):
     f.close()
     print("Result written to " + outfile)
 
+console_stderr_handler.setLevel(logging.DEBUG)
+
 def sign_tx(tx, filename):
     f = open(SEED_FILE, 'r')
     ks = keystore.BIP32_KeyStore( json.loads(f.read()) )
     f.close()
     passwd = getpass.getpass("Enter your signing password: ")
-    print("signing...")
+    print("creating wallet")
+    w = wallet(ks)
+    print("preparing inputs")
+    for txin in tx.inputs():
+        w.add_input_info(txin)
+    print("signing " + str(len(tx.inputs())) + " inputs...")
     ks.sign_transaction(tx, password_stretch(passwd))
     ok = False
     for txin in tx.inputs():
+        print(txin)
         for sig in txin['signatures']:
             if sig != None:
                 ok = True
