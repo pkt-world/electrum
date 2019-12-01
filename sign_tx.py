@@ -11,8 +11,13 @@ from electrum.transaction import tx_from_str
 from electrum import keystore
 from electrum.storage import WalletStorage
 from electrum.wallet import Multisig_Wallet
+import pkt_constants
+pkt_constants.load()
+
 
 SEED_FILE = os.environ['SEED_FILE']
+
+
 
 ## Testing seed:
 ## kick mouse drill book wagon sudden ship rifle corn patch announce leisure
@@ -58,13 +63,22 @@ def outfile_exists(file):
 
 def combine_transactions(transaction_bin, outfile):
     if outfile_exists(outfile): return
-    transactions = list(
-        map(lambda tx_bin: Transaction(tx_from_str(tx_bin)), transaction_bin))
+    print("Parsing transactions")
+    transactions = []
+    for i in range(0,len(transaction_bin)):
+      print("Parsing transaction " + str(i))
+      transactions.append(Transaction(tx_from_str(transaction_bin[i])))
     tx0 = transactions[0]
+    print("Deserializing transaction 0")
     tx0.deserialize(True)
+    print("Copying signatures")
+    txn = 0
     for tx in transactions[1:]:
         i = 0
+        print("  From transaction " + str(txn))
+        txn += 1
         for txin in tx.inputs():
+            print("    From input " + str(i))
             signingPos = 0
             for sig in txin['signatures']:
                 if sig != None:
@@ -72,7 +86,7 @@ def combine_transactions(transaction_bin, outfile):
                 signingPos += 1
             i += 1
     f = open(outfile, 'w')
-    f.write(tx.serialize_to_network())
+    f.write(tx0.serialize_to_network())
     f.close()
     print("Result written to " + outfile)
 
@@ -152,9 +166,10 @@ def main():
     if len(sys.argv) > 4 and sys.argv[1] == 'combine':
         txs = []
         for i in range(2,len(sys.argv)-1):
-            with open(sys.argv[2], 'r') as file:
+            with open(sys.argv[i], 'r') as file:
+                print("Reading transaction from " + sys.argv[i])
                 txs.append( file.read().replace('\n', '') )
-        combine_transactions(txs)
+        combine_transactions(txs, sys.argv[len(sys.argv)-1])
     if len(sys.argv) == 3 and sys.argv[1] == 'sign':
         if len(sys.argv) < 3:
             usage()
@@ -165,6 +180,8 @@ def main():
         filename = sys.argv[2]
         with open(filename, 'r') as file:
             data = file.read().replace('\n', '')
+            if data[0:2] == "00":
+                data = data[2:]
             prompt_to_sign(data, filename)
             return
     if len(sys.argv) == 2 and sys.argv[1] == 'seed':
