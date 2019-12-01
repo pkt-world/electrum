@@ -38,12 +38,16 @@ def wallet(ks0):
     ws = WalletStorage("/tmp/fakewallet")
     ws.put('wallet_type', "%dof%d" % (m, len(NS_KEYS)))
     ksmp = ks0.get_master_public_key()
+    ok = False
     for i, k in enumerate(NS_KEYS):
         if ksmp == k:
             ks = ks0
+            ok = True
         else:
             ks = keystore.from_master_key(k)
         ws.put('x%d/' % (i + 1), ks.dump())
+    if not ok:
+        print("WARNING: Your pubkey does not appear in the multisig group")
     return Multisig_Wallet(ws)
 
 def password_stretch(password):
