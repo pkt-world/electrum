@@ -18,8 +18,9 @@ def dump_tx(tx_bin):
     eprint("This transaction will:")
     for o in tx.outputs():
         eprint("  * pay " + o.address + " " + str(o.value / 0x40000000) + " PKT")
-    for i in tx.inputs():
-        print(i['prevout_hash'])
+    for inp in tx.inputs():
+        #print(inp)
+        print(inp['prevout_hash'])
 
 def main():
     if len(sys.argv) < 2:

@@ -30,3 +30,7 @@ contrib/build-wine/tmp/
 contrib/build-wine/fresh_clone/
 contrib/build-linux/appimage/build/
 contrib/build-linux/appimage/.cache/
+
+# pkt stuff
+/tx*.b64
+/config.json

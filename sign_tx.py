@@ -5,6 +5,7 @@ import getpass
 import json
 import os
 import logging
+import codecs
 from electrum.logging import console_stderr_handler
 from electrum.transaction import Transaction
 from electrum.transaction import tx_from_str
@@ -14,9 +15,7 @@ from electrum.wallet import Multisig_Wallet
 import pkt_constants
 pkt_constants.load()
 
-
-SEED_FILE = os.environ['SEED_FILE']
-
+CONFIG_FILE = "./config.json"
 
 
 ## Testing seed:
@@ -94,55 +93,81 @@ def combine_transactions(transaction_bin, outfile):
     f.close()
     print("Result written to " + outfile)
 
-console_stderr_handler.setLevel(logging.DEBUG)
+#console_stderr_handler.setLevel(logging.DEBUG)
 
-def sign_tx(tx, filename):
-    f = open(SEED_FILE, 'r')
+def signer(w, ks, key, txns, signum, numsigners, f):
+    i = 0
+    for tx in txns:
+        if i % numsigners != signum:
+            i += 1
+            continue
+        print("[" + str(signum) + "] Signing transaction " + str(i) + "/" + str(len(txns)))
+        i += 1
+        for txin in tx.inputs():
+            w.add_input_info(txin)
+        ks.sign_transaction(tx, key)
+        f.write(codecs.encode(codecs.decode(tx.serialize(), 'hex'), 'base64').decode().replace("\n", "") + '\n')
+
+def sign_txns(config, txns, outfile):
+    f = open(config['seedpath'], 'r')
     ks = keystore.BIP32_KeyStore( json.loads(f.read()) )
     f.close()
     passwd = getpass.getpass("Enter your signing password: ")
-    print("creating wallet")
+    print("You can now safely remove your external storage containing the seed file")
+    print("Creating wallet")
     w = wallet(ks)
-    print("preparing inputs")
-    for txin in tx.inputs():
-        w.add_input_info(txin)
-    print("signing " + str(len(tx.inputs())) + " inputs...")
-    ks.sign_transaction(tx, password_stretch(passwd))
-    ok = False
-    for txin in tx.inputs():
-        print(txin)
-        for sig in txin['signatures']:
-            if sig != None:
-                ok = True
-                break
-    if not ok:
-        print("Signing failed, perhaps your key does not match?")
-        return
-    f = open(filename + '.signed', 'w')
-    f.write(tx.serialize())
+    key = password_stretch(passwd)
+    f = open(outfile, 'w')
+    numsigners = 2
+    if 'numsigners' in config:
+        numsigners = config['numsigners']
+    pids = []
+    for x in range(0,numsigners):
+        print("Forking signer number " + str(x))
+        newpid = os.fork()
+        if newpid == 0:
+              signer(w, ks, key, txns, x, numsigners, f)
+              print("[" + str(x) + "] Done")
+              os.exit()
+        pids.append(newpid)
+    for pid in pids:
+        os.waitpid(pid, 0)
     f.close()
-    print("Signed transaction written to " + filename + ".signed")
+    print("Signed transactions written to " + outfile)
 
-def prompt_to_sign(tx_bin, filename):
-    if outfile_exists(filename + '.signed'): return
-    tx = Transaction(tx_from_str(tx_bin))
-    print("Parsing transaction...")
-    tx.outputs()
-    print("This transaction will:")
-    for o in tx.outputs():
-        print("  * pay " + o.address + " " + str(o.value / 0x40000000) + " PKT")
+def prompt_to_sign(config, lines, filename):
+    outfile = filename.replace('.b64', '') + "_signed_" + config['name'] + '.b64'
+    if outfile_exists(outfile): return
+    txns = []
+    i = 0
+    for l in lines:
+        print("Parsing transaction " + str(i) + "/" + str(len(lines)))
+        i += 1
+        hexl = codecs.encode(codecs.decode(l.encode(), 'base64'), 'hex').decode()
+        tx = Transaction(tx_from_str(hexl))
+        tx.outputs()
+        txns.append(tx)
+    print("these transactions will:")
+    outputs = {}
+    for tx in txns:
+        for o in tx.outputs():
+            if not o.address in outputs:
+                outputs[o.address] = 0
+            outputs[o.address] += o.value / 0x40000000
+    for k in outputs:
+        print("  * pay " + k + " " + str(outputs[k]) + " PKT")
     while True:
         yn = input("Do you want to sign? [y/n] ")
         if yn == 'n':
             print("Ok, bye")
             return
         if yn == 'y':
-            sign_tx(tx, filename)
+            sign_txns(config, txns, outfile)
             return
         print("Your choices are 'y' or 'n'")
 
-def configure_seed():
-    if outfile_exists(SEED_FILE): return
+def configure_seed(config):
+    if outfile_exists(config['seedpath']): return
     seed = input("Type your seed words: ")
     passwd = ''
     while True:
@@ -154,10 +179,10 @@ def configure_seed():
         break
     ks0 = keystore.from_seed(seed, '', True)
     ks0.update_password(None, password_stretch(passwd))
-    f = open(SEED_FILE, 'w')
+    f = open(config['seedpath'], 'w')
     f.write(json.dumps(ks0.dump()))
     f.close()
-    print(SEED_FILE + " written")
+    print(config['seedpath'] + " written")
     print("Your master public key is " + ks0.get_master_public_key())
 
 def usage():
@@ -166,7 +191,40 @@ def usage():
     print("       ./sign_tx.py combine /path/to/tx1 /path/to/tx2 /path/to/output")
     print("                                                          # combine partial signed transactions")
 
+def mk_config():
+    print("There is now a config.json file")
+    print("It will contain the path to your seed file and a name which will be appended")
+    print("to the signed output in order to simplify merging.")
+    print()
+    print("Since you don't currently have a config.json, I will make one for you.")
+    name = input("Please type your name (this will be appended to your signed outputs): ")
+    seedpath = ""
+    try:
+        seedpath = os.environ['SEED_FILE']
+    except:
+        pass
+    while seedpath != "":
+        yn = input("Is [" + seedpath + "] the correct path to your seed file? [y/n] ")
+        if yn == 'y':
+            break
+        if yn == 'n':
+            seedpath = ""
+            break
+        print("I don't understand your reply, it should be y or n")
+    if seedpath == "":
+        seedpath = input("Please type the path to your seed file: ")
+    f = open(CONFIG_FILE, 'w')
+    f.write(json.dumps({ 'name': name, 'seedpath': seedpath }))
+    f.close()
+    print("Thanks, now I will now continue as normal")
+    print()
+
 def main():
+    if not os.path.exists(CONFIG_FILE):
+        mk_config()
+    f = open(CONFIG_FILE, 'r')
+    config = json.loads(f.read())
+    f.close()
     if len(sys.argv) > 4 and sys.argv[1] == 'combine':
         txs = []
         for i in range(2,len(sys.argv)-1):
@@ -178,18 +236,16 @@ def main():
         if len(sys.argv) < 3:
             usage()
             return
-        if not os.path.exists(SEED_FILE):
-            print(SEED_FILE + " does not exist, please run `./sign_tx.py seed` first")
+        if not os.path.exists(config['seedpath']):
+            print(config['seedpath'] + " does not exist, perhaps it's on external storage ?")
             return
         filename = sys.argv[2]
         with open(filename, 'r') as file:
-            data = file.read().replace('\n', '')
-            if data[0:2] == "00":
-                data = data[2:]
-            prompt_to_sign(data, filename)
+            lines = file.read().splitlines()
+            prompt_to_sign(config, lines, filename)
             return
     if len(sys.argv) == 2 and sys.argv[1] == 'seed':
-        configure_seed()
+        configure_seed(config)
         return
     usage()
 main()
