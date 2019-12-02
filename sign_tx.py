@@ -128,7 +128,7 @@ def sign_txns(config, txns, outfile):
         if newpid == 0:
               signer(w, ks, key, txns, x, numsigners, f)
               print("[" + str(x) + "] Done")
-              os.exit()
+              sys.exit(0)
         pids.append(newpid)
     for pid in pids:
         os.waitpid(pid, 0)
