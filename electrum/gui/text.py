@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import electrum
 from electrum import util
-from electrum.util import format_satoshis
+from electrum.util import format_pkt, space_pad_pkt
 from electrum.bitcoin import is_address, COIN
 from electrum.transaction import PartialTxOutput
 from electrum.wallet import Wallet
@@ -137,9 +137,8 @@ class ElectrumGui:
             label = self.wallet.get_label(hist_item.txid)
             if len(label) > 40:
                 label = label[0:37] + '...'
-            self.history.append(format_str % (time_str, label, format_satoshis(hist_item.delta, whitespaces=True),
-                                              format_satoshis(hist_item.balance, whitespaces=True)))
-
+            self.history.append(format_str % (time_str, label, space_pad_pkt(format_pkt(hist_item.delta)),
+                                              space_pad_pkt(format_pkt(hist_item.balance))))
 
     def print_balance(self):
         if not self.network:

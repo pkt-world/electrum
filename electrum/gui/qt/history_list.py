@@ -552,7 +552,7 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
             return
         start_date = h.get('start_date')
         end_date = h.get('end_date')
-        format_amount = lambda x: self.parent.format_amount(x.value) + ' ' + self.parent.base_unit()
+        format_amount = lambda x: self.parent.format_amount(x.value)
         d = WindowModalDialog(self, _("Summary"))
         d.setMinimumSize(600, 150)
         vbox = QVBoxLayout()

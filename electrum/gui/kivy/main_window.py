@@ -9,13 +9,14 @@ import threading
 import asyncio
 from typing import TYPE_CHECKING, Optional, Union, Callable, Sequence
 
+from electrum.bitcoin import COIN
 from electrum.storage import WalletStorage, StorageReadWriteError
 from electrum.wallet_db import WalletDB
 from electrum.wallet import Wallet, InternalAddressCorruption, Abstract_Wallet
 from electrum.plugin import run_hook
 from electrum import util
 from electrum.util import (profiler, InvalidPassword, send_exception_to_crash_reporter,
-                           format_satoshis, format_satoshis_plain, format_fee_satoshis,
+                           format_pkt, space_pad_pkt, format_satoshis_plain,
                            maybe_extract_bolt11_invoice)
 from electrum.invoices import PR_PAID, PR_FAILED
 from electrum import blockchain
@@ -303,7 +304,7 @@ class ElectrumWindow(App):
         rate = self.fx.exchange_rate()
         if rate.is_nan():
             return ''
-        fiat_amount = self.get_amount(amount_str + ' ' + self.base_unit) * rate / pow(10, 8)
+        fiat_amount = self.get_amount(amount_str + ' ' + self.base_unit) * rate / COIN
         return "{:.2f}".format(fiat_amount).rstrip('0').rstrip('.')
 
     def fiat_to_btc(self, fiat_amount):
@@ -312,7 +313,7 @@ class ElectrumWindow(App):
         rate = self.fx.exchange_rate()
         if rate.is_nan():
             return ''
-        satoshis = int(pow(10,8) * Decimal(fiat_amount) / Decimal(rate))
+        satoshis = int(COIN * Decimal(fiat_amount) / Decimal(rate))
         return format_satoshis_plain(satoshis, decimal_point=self.decimal_point())
 
     def get_amount(self, amount_str):
@@ -947,6 +948,8 @@ class ElectrumWindow(App):
         return format_satoshis_plain(amount_after_all_fees, decimal_point=self.decimal_point())
 
     def format_amount(self, x, is_diff=False, whitespaces=False):
+        out = format_pkt(x, is_diff=is_diff)
+        return space_pad_pkt(out) if whitespaces else out
         return format_satoshis(
             x,
             num_zeros=0,
@@ -964,7 +967,7 @@ class ElectrumWindow(App):
 
     def format_fee_rate(self, fee_rate):
         # fee_rate is in sat/kB
-        return format_fee_satoshis(fee_rate/1000) + ' sat/byte'
+        return format_pkt(fee_rate/1000) + '/byte'
 
     #@profiler
     def update_wallet(self, *dt):

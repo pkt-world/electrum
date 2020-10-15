@@ -72,12 +72,13 @@ def inv_dict(d):
 
 ca_path = certifi.where()
 
+PACKS_PER_NPKT = ( Decimal(2**30) / Decimal(1e9) )
 
-base_units = {'BTC':8, 'mBTC':5, 'bits':2, 'sat':0}
+base_units = {'PKT':9, 'mPKT':6, 'uPKT':3, 'nPKT':0}
 base_units_inverse = inv_dict(base_units)
-base_units_list = ['BTC', 'mBTC', 'bits', 'sat']  # list(dict) does not guarantee order
+base_units_list = ['PKT', 'mPKT', 'uPKT', 'nPKT']  # list(dict) does not guarantee order
 
-DECIMAL_POINT_DEFAULT = 5  # mBTC
+DECIMAL_POINT_DEFAULT = 9  # PKT
 
 
 class UnknownBaseUnit(Exception): pass
@@ -170,7 +171,7 @@ class Satoshis(object):
 
     def __str__(self):
         # note: precision is truncated to satoshis here
-        return format_satoshis(self.value)
+        return format_pkt(self.value)
 
     def __eq__(self, other):
         return self.value == other.value
@@ -614,19 +615,36 @@ def chunks(items, size: int):
         yield items[i: i + size]
 
 
-def format_satoshis_plain(x, *, decimal_point=8) -> str:
+def format_satoshis_plain(x, *, decimal_point=9) -> str:
     """Display a satoshi amount scaled.  Always uses a '.' as a decimal
     point and has no thousands separator"""
     if x == '!':
         return 'max'
-    scale_factor = pow(10, decimal_point)
+    scale_factor = PACKS_PER_NPKT * pow(10, decimal_point)
     return "{:.8f}".format(Decimal(x) / scale_factor).rstrip('0').rstrip('.')
 
 
 DECIMAL_POINT = localeconv()['decimal_point']  # type: str
 
+PKT_TYPES = ['PKT', 'mPKT', 'uPKT', 'nPKT']
+def format_pkt(
+    x: Union[int, Decimal, float, str, None], # packs
+    *,
+    is_diff: bool=False,
+) -> str:
+    if x is None: return 'unknown'
+    if type(x) is str: return 'max' if x == '!' else 'unknown'
+    out = Decimal(x) / Decimal(2**30)
+    t = 0
+    while abs(out) < 1:
+        out *= 1000
+        t += 1
+        if t > 3: return '0.00 PKT'
+    return ('{:' + ('+' if is_diff else '') + '.2f} {}').format(out, PKT_TYPES[t])
 
-def format_satoshis(
+def space_pad_pkt(pkt): return " " * (15 - len(pkt)) + pkt
+
+def _disabled__format_satoshis(
         x,  # in satoshis
         *,
         num_zeros=0,
@@ -664,11 +682,11 @@ def format_satoshis(
     return result
 
 
-FEERATE_PRECISION = 1  # num fractional decimal places for sat/byte fee rates
+FEERATE_PRECISION = 2  # num fractional decimal places for sat/byte fee rates
 _feerate_quanta = Decimal(10) ** (-FEERATE_PRECISION)
 
 
-def format_fee_satoshis(fee, *, num_zeros=0, precision=None):
+def _disabled__format_fee_satoshis(fee, *, num_zeros=0, precision=None):
     if precision is None:
         precision = FEERATE_PRECISION
     num_zeros = min(num_zeros, FEERATE_PRECISION)  # no more zeroes than available prec

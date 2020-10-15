@@ -274,10 +274,8 @@ class ChannelsList(MyTreeView):
             item.setToolTip("")
 
     def update_can_send(self, lnworker: LNWallet):
-        msg = _('Can send') + ' ' + self.parent.format_amount(lnworker.num_sats_can_send())\
-              + ' ' + self.parent.base_unit() + '; '\
-              + _('can receive') + ' ' + self.parent.format_amount(lnworker.num_sats_can_receive())\
-              + ' ' + self.parent.base_unit()
+        msg = _('Can send') + ' ' + self.parent.format_amount(lnworker.num_sats_can_send()) + '; '\
+              + _('can receive') + ' ' + self.parent.format_amount(lnworker.num_sats_can_receive())
         self.can_send_label.setText(msg)
 
     def get_toolbar(self):
@@ -295,7 +293,7 @@ class ChannelsList(MyTreeView):
 
     def statistics_dialog(self):
         channel_db = self.parent.network.channel_db
-        capacity = self.parent.format_amount(channel_db.capacity()) + ' '+ self.parent.base_unit()
+        capacity = self.parent.format_amount(channel_db.capacity())
         d = WindowModalDialog(self.parent, _('Lightning Network Statistics'))
         d.setMinimumWidth(400)
         vbox = QVBoxLayout(d)

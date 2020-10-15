@@ -463,15 +463,15 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         elif amount is None:
             amount_str = ''
         elif amount > 0:
-            amount_str = _("Amount received:") + ' %s'% format_amount(amount) + ' ' + base_unit
+            amount_str = _("Amount received:") + ' %s'% format_amount(amount)
         else:
-            amount_str = _("Amount sent:") + ' %s'% format_amount(-amount) + ' ' + base_unit
+            amount_str = _("Amount sent:") + ' %s'% format_amount(-amount)
         if amount_str:
             self.amount_label.setText(amount_str)
         else:
             self.amount_label.hide()
         size_str = _("Size:") + ' %d bytes'% size
-        fee_str = _("Fee") + ': %s' % (format_amount(fee) + ' ' + base_unit if fee is not None else _('unknown'))
+        fee_str = _("Fee") + ': %s' % (format_amount(fee) if fee is not None else _('unknown'))
         if fee is not None:
             fee_rate = fee/size*1000
             fee_str += '  ( %s ) ' % self.main_window.format_fee_rate(fee_rate)
@@ -488,9 +488,9 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         if ln_amount is None or ln_amount == 0:
             ln_amount_str = ''
         elif ln_amount > 0:
-            ln_amount_str = _('Amount received in channels') + ': ' + format_amount(ln_amount) + ' ' + base_unit
+            ln_amount_str = _('Amount received in channels') + ': ' + format_amount(ln_amount)
         elif ln_amount < 0:
-            ln_amount_str = _('Amount withdrawn from channels') + ': ' + format_amount(-ln_amount) + ' ' + base_unit
+            ln_amount_str = _('Amount withdrawn from channels') + ': ' + format_amount(-ln_amount)
         if ln_amount_str:
             self.ln_amount_label.setText(ln_amount_str)
         else:

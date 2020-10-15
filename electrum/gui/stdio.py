@@ -5,7 +5,7 @@ import logging
 
 from electrum import util
 from electrum import WalletStorage, Wallet
-from electrum.util import format_satoshis
+from electrum.util import format_pkt, space_pad_pkt
 from electrum.bitcoin import is_address, COIN
 from electrum.transaction import PartialTxOutput
 from electrum.network import TxBroadcastError, BestEffortRequestFailed
@@ -106,8 +106,8 @@ class ElectrumGui:
                 time_str = 'unconfirmed'
 
             label = self.wallet.get_label(hist_item.txid)
-            messages.append(format_str % (time_str, label, format_satoshis(delta, whitespaces=True),
-                                          format_satoshis(hist_item.balance, whitespaces=True)))
+            messages.append(format_str % (time_str, label, space_pad_pkt(format_pkt(delta)),
+                                          space_pad_pkt(format_pkt(hist_item.balance))))
 
         self.print_list(messages[::-1], format_str%( _("Date"), _("Description"), _("Amount"), _("Balance")))
 

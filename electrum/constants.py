@@ -151,12 +151,48 @@ class BitcoinSimnet(BitcoinTestnet):
     LN_DNS_SEEDS = []
 
 
+class PktMainnet(AbstractNet):
+
+    TESTNET = False
+    WIF_PREFIX = 0xef
+    ADDRTYPE_P2PKH = 0x75
+    ADDRTYPE_P2SH = 0x38
+    SEGWIT_HRP = "pkt"
+    GENESIS = "0bdc1712a46194e552cf417ab0439c2d4f456c35cf63a0a406964c6f93432d85"
+    DEFAULT_PORTS = {'t': '50001', 's': '50002'}
+    DEFAULT_SERVERS = read_json('servers_pkt.json', {})
+    CHECKPOINTS = read_json('checkpoints_pkt.json', [])
+
+    XPRV_HEADERS = {
+        'standard':    0x6b863bed,  # PpvtX
+        'p2wpkh-p2sh': 0x049d7878,  # yprv
+        'p2wsh-p2sh':  0x0295b005,  # Yprv
+        'p2wpkh':      0x04b2430c,  # zprv
+        'p2wsh':       0x02aa7a99,  # Zprv
+    }
+    XPRV_HEADERS_INV = inv_dict(XPRV_HEADERS)
+    XPUB_HEADERS = {
+        'standard':    0x6b85c53f,  # PpubX
+        'p2wpkh-p2sh': 0x049d7cb2,  # ypub
+        'p2wsh-p2sh':  0x0295b43f,  # Ypub
+        'p2wpkh':      0x04b24746,  # zpub
+        'p2wsh':       0x02aa7ed3,  # Zpub
+    }
+    XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
+    BIP44_COIN_TYPE = 390
+    LN_REALM_BYTE = 390
+    LN_DNS_SEEDS = [ ]
+
 # don't import net directly, import the module instead (so that net is singleton)
 net = BitcoinMainnet
 
 def set_simnet():
     global net
     net = BitcoinSimnet
+
+def set_pkt():
+    global net
+    net = PktMainnet
 
 def set_mainnet():
     global net

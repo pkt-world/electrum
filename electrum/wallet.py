@@ -50,7 +50,7 @@ from .bip32 import BIP32Node, convert_bip32_intpath_to_strpath, convert_bip32_pa
 from .crypto import sha256
 from . import util
 from .util import (NotEnoughFunds, UserCancelled, profiler,
-                   format_satoshis, format_fee_satoshis, NoDynamicFeeEstimates,
+                   format_pkt, NoDynamicFeeEstimates,
                    WalletFileException, BitcoinException, MultipleSpendMaxTxOutputs,
                    InvalidPassword, format_time, timestamp_to_datetime, Satoshis,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
@@ -1016,7 +1016,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             if fee is not None:
                 size = tx.estimated_size()
                 fee_per_byte = fee / size
-                extra.append(format_fee_satoshis(fee_per_byte) + ' sat/b')
+                extra.append(format_pkt(fee_per_byte) + '/b')
             if fee is not None and height in (TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED) \
                and self.config.has_fee_mempool():
                 exp_n = self.config.fee_to_depth(fee_per_byte)
@@ -1704,7 +1704,8 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         is_lightning = x.is_lightning()
         d = {
             'is_lightning': is_lightning,
-            'amount_BTC': format_satoshis(x.get_amount_sat()),
+            'amount_PKT': format_pkt(x.get_amount_sat()),
+            'amount_packs': x.get_amount_sat(),
             'message': x.message,
             'timestamp': x.time,
             'expiration': x.exp,
@@ -1747,7 +1748,8 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         is_lightning = x.is_lightning()
         d = {
             'is_lightning': is_lightning,
-            'amount_BTC': format_satoshis(x.get_amount_sat()),
+            'amount_PKT': format_pkt(x.get_amount_sat()),
+            'amount_packs': x.get_amount_sat(),
             'message': x.message,
             'timestamp': x.time,
             'expiration': x.exp,

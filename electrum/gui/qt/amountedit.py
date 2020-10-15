@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QLineEdit, QStyle, QStyleOptionFrame)
 from .util import char_width_in_lineedit, ColorScheme
 
 from electrum.util import (format_satoshis_plain, decimal_point_to_base_unit_name,
-                           FEERATE_PRECISION, quantize_feerate)
+                           FEERATE_PRECISION, quantize_feerate, PACKS_PER_NPKT)
 
 
 class FreezableLineEdit(QLineEdit):
@@ -35,7 +35,7 @@ class AmountEdit(FreezableLineEdit):
         self.extra_precision = 0
 
     def decimal_point(self):
-        return 8
+        return 9
 
     def max_precision(self):
         return self.decimal_point() + self.extra_precision
@@ -96,6 +96,8 @@ class BTCAmountEdit(AmountEdit):
             x = Decimal(str(self.text()))
         except:
             return None
+        out = pow(10, self.decimal_point()) * x * PACKS_PER_NPKT
+        return out if self.extra_precision > 0 else int(out)
         # scale it to max allowed precision, make it an int
         power = pow(10, self.max_precision())
         max_prec_amount = int(power * x)
@@ -121,7 +123,7 @@ class FeerateEdit(BTCAmountEdit):
         self.extra_precision = FEERATE_PRECISION
 
     def _base_unit(self):
-        return 'sat/byte'
+        return 'nPKT/byte'
 
     def get_amount(self):
         sat_per_byte_amount = BTCAmountEdit.get_amount(self)

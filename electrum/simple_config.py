@@ -14,7 +14,7 @@ from aiorpcx import NetAddress
 from . import util
 from . import constants
 from .util import base_units, base_unit_name_to_decimal_point, decimal_point_to_base_unit_name, UnknownBaseUnit, DECIMAL_POINT_DEFAULT
-from .util import format_satoshis, format_fee_satoshis
+from .util import format_pkt, space_pad_pkt
 from .util import user_dir, make_dir, NoDynamicFeeEstimates, quantize_feerate
 from .i18n import _
 from .logging import get_logger, Logger
@@ -129,6 +129,9 @@ class SimpleConfig(Logger):
         elif self.get('simnet'):
             path = os.path.join(path, 'simnet')
             make_dir(path, allow_symlink=False)
+        elif self.get('pkt'):
+            path = os.path.join(path, 'pkt')
+            make_dir(path, allow_symlink=False)
 
         self.logger.info(f"electrum directory {path}")
         return path
@@ -219,7 +222,7 @@ class SimpleConfig(Logger):
         base_unit = self.user_config.get('base_unit')
         if isinstance(base_unit, str):
             self._set_key_in_user_config('base_unit', None)
-            map_ = {'btc':8, 'mbtc':5, 'ubtc':2, 'bits':2, 'sat':0}
+            map_ = {'pkt':9, 'mpkt':6, 'upkt':3, 'npkt':0}
             decimal_point = map_.get(base_unit.lower())
             self._set_key_in_user_config('decimal_point', decimal_point)
 
@@ -421,13 +424,13 @@ class SimpleConfig(Logger):
         text is what we target: static fee / num blocks to confirm in / mempool depth
         tooltip is the corresponding estimate (e.g. num blocks for a static fee)
 
-        fee_rate is in sat/kbyte
+        fee_rate is in nPKT/kbyte
         """
         if fee_rate is None:
             rate_str = 'unknown'
         else:
             fee_rate = fee_rate/1000
-            rate_str = format_fee_satoshis(fee_rate) + ' sat/byte'
+            rate_str = format_pkt(fee_rate) + '/byte'
 
         if dyn:
             if mempool:
@@ -613,7 +616,9 @@ class SimpleConfig(Logger):
             except:
                 pass
 
-    def format_amount(self, x, is_diff=False, whitespaces=False):
+    def format_amount(self, x: Union[int, Decimal, str, None], is_diff=False, whitespaces=False):
+        out = format_pkt(x, is_diff=is_diff)
+        return space_pad_pkt(out) if whitespaces else out
         return format_satoshis(
             x,
             num_zeros=self.num_zeros,
@@ -622,11 +627,12 @@ class SimpleConfig(Logger):
             whitespaces=whitespaces,
         )
 
-    def format_amount_and_units(self, amount):
+    def format_amount_and_units(self, amount: int):
+        return self.format_amount(amount)
         return self.format_amount(amount) + ' '+ self.get_base_unit()
 
-    def format_fee_rate(self, fee_rate):
-        return format_fee_satoshis(fee_rate/1000, num_zeros=self.num_zeros) + ' sat/byte'
+    def format_fee_rate(self, fee_rate: Union[float, Decimal]):
+        return format_pkt(fee_rate/1000) + '/byte'
 
     def get_base_unit(self):
         return decimal_point_to_base_unit_name(self.decimal_point)

@@ -12,7 +12,7 @@ if is_local and os.name == 'nt':
 
 
 from .version import ELECTRUM_VERSION
-from .util import format_satoshis
+from .util import format_pkt
 from .wallet import Wallet
 from .storage import WalletStorage
 from .coinchooser import COIN_CHOOSERS

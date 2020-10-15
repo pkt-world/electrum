@@ -52,11 +52,12 @@ from . import x509
 from . import pem
 from . import version
 from . import blockchain
-from .blockchain import Blockchain, HEADER_SIZE
+from .blockchain import Blockchain, HEADER_SIZE, serialize_header
 from . import constants
 from .i18n import _
 from .logging import Logger
 from .transaction import Transaction
+from .packetcrypt import PacketCrypt
 
 if TYPE_CHECKING:
     from .network import Network
@@ -348,6 +349,8 @@ class Interface(Logger):
         self.session = None  # type: Optional[NotificationSession]
         self._ipaddr_bucket = None
 
+        self.packetcrypt = PacketCrypt()
+
         # Latest block header and corresponding height, as claimed by the server.
         # Note that these values are updated before they are verified.
         # Especially during initial header sync, verification can take a long time.
@@ -578,12 +581,14 @@ class Interface(Logger):
             return
         self.logger.info(f"requesting chunk from height {height}")
         size = 2016
+        cp_height = constants.net.max_checkpoint()
         if tip is not None:
+            cp_height = tip
             size = min(size, tip - index * 2016 + 1)
             size = max(size, 0)
         try:
             self._requested_chunks.add(index)
-            res = await self.session.send_request('blockchain.block.headers', [index * 2016, size])
+            res = await self.session.send_request('blockchain.block.headers', [index * 2016, size, cp_height])
         finally:
             self._requested_chunks.discard(index)
         assert_dict_contains_field(res, field_name='count')
@@ -596,6 +601,8 @@ class Interface(Logger):
             raise RequestCorrupted('inconsistent chunk hex and count')
         if res['count'] != size:
             raise RequestCorrupted(f"expected {size} headers but only got {res['count']}")
+        assert self.blockchain is not None
+        await self.packetcrypt.check_proofs(self, self.blockchain, tip, bfh(res['hex']), index * 2016)
         conn = self.blockchain.connect_chunk(index, res['hex'])
         if not conn:
             return conn, 0
@@ -745,6 +752,9 @@ class Interface(Logger):
             self.logger.info(f"could connect {height}")
             height += 1
             if isinstance(can_connect, Blockchain):  # not when mocking
+                chunk_of_one = serialize_header(header)
+                await self.packetcrypt.check_proofs(
+                    self, can_connect, self.tip, bfh(chunk_of_one), header['block_height'])
                 self.blockchain = can_connect
                 self.blockchain.save_header(header)
             return 'catchup', height

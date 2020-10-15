@@ -1,0 +1,20 @@
+{
+    "electrumx-01.gridfinity.com": {
+        "pruning": "-",
+        "t": "50001",
+        "s": "50002",
+        "version": "1.2"
+    },
+    "electrumx.cjd.li": {
+        "pruning": "-",
+        "t": "50001",
+        "s": "50002",
+        "version": "1.2"
+    },
+    "electrumx.anode.co": {
+        "pruning": "-",
+        "t": "50001",
+        "s": "50002",
+        "version": "1.2"
+    }
+}

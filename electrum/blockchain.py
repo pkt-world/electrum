@@ -23,7 +23,7 @@
 import os
 import threading
 import time
-from typing import Optional, Dict, Mapping, Sequence
+from typing import Optional, Dict, Mapping, Sequence, Callable, TypeVar
 
 from . import util
 from .bitcoin import hash_encode, int_to_hex, rev_hex
@@ -37,7 +37,7 @@ from .logging import get_logger, Logger
 _logger = get_logger(__name__)
 
 HEADER_SIZE = 80  # bytes
-MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
+MAX_TARGET = 0x000fffff00000000000000000000000000000000000000000000000000000000
 
 
 class MissingHeader(Exception):
@@ -46,19 +46,23 @@ class MissingHeader(Exception):
 class InvalidHeader(Exception):
     pass
 
-def serialize_header(header_dict: dict) -> str:
+def serialize_header(header_dict: dict, *, include_additional: bool=False) -> str:
     s = int_to_hex(header_dict['version'], 4) \
         + rev_hex(header_dict['prev_block_hash']) \
         + rev_hex(header_dict['merkle_root']) \
         + int_to_hex(int(header_dict['timestamp']), 4) \
         + int_to_hex(int(header_dict['bits']), 4) \
         + int_to_hex(int(header_dict['nonce']), 4)
+    if include_additional:
+        if header_dict['additional'] is None:
+            raise Exception("include_additional is true but there is no additional data")
+        s += header_dict['additional'].hex()
     return s
 
 def deserialize_header(s: bytes, height: int) -> dict:
     if not s:
         raise InvalidHeader('Invalid header: {}'.format(s))
-    if len(s) != HEADER_SIZE:
+    if len(s) < HEADER_SIZE:
         raise InvalidHeader('Invalid header length: {}'.format(len(s)))
     hex_to_int = lambda s: int.from_bytes(s, byteorder='little')
     h = {}
@@ -69,6 +73,7 @@ def deserialize_header(s: bytes, height: int) -> dict:
     h['bits'] = hex_to_int(s[72:76])
     h['nonce'] = hex_to_int(s[76:80])
     h['block_height'] = height
+    h['additional'] = s[HEADER_SIZE:] if len(s) > HEADER_SIZE else None
     return h
 
 def hash_header(header: dict) -> str:
@@ -307,9 +312,14 @@ class Blockchain(Logger):
             return
         bits = cls.target_to_bits(target)
         if bits != header.get('bits'):
-            raise Exception("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+            # Until block 50k, PKT had testnet difficulty rules
+            if header['block_height'] >= 50000 or constants.net.SEGWIT_HRP != "pkt":
+                raise Exception("bits mismatch: %s vs %s (%s)" % (bits, header.get('bits'), _hash))
         block_hash_as_num = int.from_bytes(bfh(_hash), byteorder='big')
         if block_hash_as_num > target:
+            if constants.net.SEGWIT_HRP == "pkt":
+                # PacketCrypt checked elsewhere
+                return
             raise Exception(f"insufficient proof of work: {block_hash_as_num} vs target {target}")
 
     def verify_chunk(self, index: int, data: bytes) -> None:
@@ -536,7 +546,7 @@ class Blockchain(Logger):
         bits = last.get('bits')
         target = self.bits_to_target(bits)
         nActualTimespan = last.get('timestamp') - first.get('timestamp')
-        nTargetTimespan = 14 * 24 * 60 * 60
+        nTargetTimespan = 14 * 24 * 60 * 60 // 10
         nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
         nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
         new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
@@ -547,8 +557,8 @@ class Blockchain(Logger):
     @classmethod
     def bits_to_target(cls, bits: int) -> int:
         bitsN = (bits >> 24) & 0xff
-        if not (0x03 <= bitsN <= 0x1d):
-            raise Exception("First part of bits should be in [0x03, 0x1d]")
+        if not (0x03 <= bitsN <= 0x20):
+            raise Exception("First part of bits should be in [0x03, 0x20]")
         bitsBase = bits & 0xffffff
         if not (0x8000 <= bitsBase <= 0x7fffff):
             raise Exception("Second part of bits should be in [0x8000, 0x7fffff]")
