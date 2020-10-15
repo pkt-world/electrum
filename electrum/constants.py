@@ -184,7 +184,7 @@ class PktMainnet(AbstractNet):
     LN_DNS_SEEDS = [ ]
 
 # don't import net directly, import the module instead (so that net is singleton)
-net = BitcoinMainnet
+net = PktMainnet
 
 def set_simnet():
     global net
