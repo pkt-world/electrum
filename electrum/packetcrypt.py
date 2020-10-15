@@ -50,13 +50,14 @@ def _contextual_get_header(
             return deserialize_header(buf, header_height)
     return chain.read_header(header_height)
 
-async def check_packetcrypt_proof(
+async def _check_packetcrypt_proof(
     sem: asyncio.Semaphore,
     net: 'Interface',
     chain: Blockchain,
     header: dict,
     chunk: bytes,
     chunk_height: int,
+    known_good_headers: set,
 ) -> str:
     async with sem:
         _logger.debug(f"check_packetcrypt_proof(height: {header['block_height']})")
@@ -74,6 +75,8 @@ async def check_packetcrypt_proof(
             bfh(serialize_header(header, include_additional=True)),
             header['block_height'])
         _logger.info(f"check_packetcrypt_proof(height: {header['block_height']}) -> {pwh}")
+        print(f"adding {hash_header(header)}")
+        known_good_headers.add(hash_header(header))
         return pwh
 
 def deduce_tip(chain: Blockchain) -> int:
@@ -86,6 +89,7 @@ class PacketCrypt:
     def __init__(self):
         self.deduced_tip = None
         self.rand = os.urandom(8).hex()
+        self.known_good_headers = set()
 
     async def check_proofs(
         self,
@@ -112,10 +116,13 @@ class PacketCrypt:
             if num > (20 / max(1, min(tip, self.deduced_tip) - x)):
                 #print(f"skip {x} because {num} > 20/{max(1, min(tip, self.deduced_tip) - x)}")
                 continue
+            if hash_header(header) in self.known_good_headers:
+                #print(f"Header {hash_header(header)} was already checked")
+                continue
             d = {}
             d['header'] = header
             d['future'] = asyncio.ensure_future(
-                check_packetcrypt_proof(sem, net, chain, header, chunk, chunk_height)
+                _check_packetcrypt_proof(sem, net, chain, header, chunk, chunk_height, self.known_good_headers)
             )
             jobs.append(d)
         if len(jobs) == 0: return
@@ -130,3 +137,5 @@ class PacketCrypt:
                 raise Exception(f"{hname()} - future was cancelled")
             if f.exception():
                 raise Exception(f"{hname()} - future raised exception: {f.exception()}")
+
+single_packetcrypt = PacketCrypt()

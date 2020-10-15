@@ -57,7 +57,7 @@ from . import constants
 from .i18n import _
 from .logging import Logger
 from .transaction import Transaction
-from .packetcrypt import PacketCrypt
+from .packetcrypt import single_packetcrypt
 
 if TYPE_CHECKING:
     from .network import Network
@@ -349,8 +349,6 @@ class Interface(Logger):
         self.session = None  # type: Optional[NotificationSession]
         self._ipaddr_bucket = None
 
-        self.packetcrypt = PacketCrypt()
-
         # Latest block header and corresponding height, as claimed by the server.
         # Note that these values are updated before they are verified.
         # Especially during initial header sync, verification can take a long time.
@@ -602,7 +600,7 @@ class Interface(Logger):
         if res['count'] != size:
             raise RequestCorrupted(f"expected {size} headers but only got {res['count']}")
         assert self.blockchain is not None
-        await self.packetcrypt.check_proofs(self, self.blockchain, tip, bfh(res['hex']), index * 2016)
+        await single_packetcrypt.check_proofs(self, self.blockchain, tip, bfh(res['hex']), index * 2016)
         conn = self.blockchain.connect_chunk(index, res['hex'])
         if not conn:
             return conn, 0
@@ -753,7 +751,7 @@ class Interface(Logger):
             height += 1
             if isinstance(can_connect, Blockchain):  # not when mocking
                 chunk_of_one = serialize_header(header)
-                await self.packetcrypt.check_proofs(
+                await single_packetcrypt.check_proofs(
                     self, can_connect, self.tip, bfh(chunk_of_one), header['block_height'])
                 self.blockchain = can_connect
                 self.blockchain.save_header(header)
