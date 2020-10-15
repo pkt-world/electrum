@@ -75,7 +75,6 @@ async def _check_packetcrypt_proof(
             bfh(serialize_header(header, include_additional=True)),
             header['block_height'])
         _logger.info(f"check_packetcrypt_proof(height: {header['block_height']}) -> {pwh}")
-        print(f"adding {hash_header(header)}")
         known_good_headers.add(hash_header(header))
         return pwh
 
