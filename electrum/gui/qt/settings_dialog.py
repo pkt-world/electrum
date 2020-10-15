@@ -203,7 +203,7 @@ Use this if you want your local watchtower to keep running after you close your 
                 edit.setAmount(amount)
             self.window.update_status()
         unit_combo.currentIndexChanged.connect(lambda x: on_unit(x, nz))
-        gui_widgets.append((unit_label, unit_combo))
+        #gui_widgets.append((unit_label, unit_combo))
 
         system_cameras = qrscanner._find_system_cameras()
         qr_combo = QComboBox()
@@ -337,7 +337,7 @@ Use this if you want your local watchtower to keep running after you close your 
             be_result = block_explorers[block_ex_combo.currentIndex()]
             self.config.set_key('block_explorer', be_result, True)
         block_ex_combo.currentIndexChanged.connect(on_be)
-        tx_widgets.append((block_ex_label, block_ex_combo))
+        #tx_widgets.append((block_ex_label, block_ex_combo))
 
         # Fiat Currency
         hist_checkbox = QCheckBox()
@@ -442,8 +442,8 @@ Use this if you want your local watchtower to keep running after you close your 
             (gui_widgets, _('General')),
             (tx_widgets, _('Transactions')),
             (lightning_widgets, _('Lightning')),
-            (fiat_widgets, _('Fiat')),
-            (oa_widgets, _('OpenAlias')),
+            #(fiat_widgets, _('Fiat')),
+            #(oa_widgets, _('OpenAlias')),
         ]
         for widgets, name in tabs_info:
             tab = QWidget()
