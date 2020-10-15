@@ -149,7 +149,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     def __init__(self, config: 'SimpleConfig', app: QApplication, plugins: 'Plugins', *, gui_object: 'ElectrumGui'):
         QDialog.__init__(self, None)
         BaseWizard.__init__(self, config, plugins)
-        self.setWindowTitle('Electrum  -  ' + _('Install Wizard'))
+        self.setWindowTitle('PKT Electrum  -  ' + _('Install Wizard'))
         self.app = app
         self.config = config
         self.gui_thread = gui_object.gui_thread
@@ -230,7 +230,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         vbox_create_new.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(widget_create_new)
 
-        self.set_layout(vbox, title=_('Electrum wallet'))
+        self.set_layout(vbox, title=_('PKT Electrum wallet'))
 
         temp_storage = None  # type: Optional[WalletStorage]
         wallet_folder = os.path.dirname(path)

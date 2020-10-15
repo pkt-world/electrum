@@ -1816,7 +1816,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             assert isinstance(req, OnchainInvoice)
             addr = req.get_address()
             if not bitcoin.is_address(addr):
-                raise Exception(_('Invalid Bitcoin address.'))
+                raise Exception(_('Invalid PKT address.'))
             if not self.is_mine(addr):
                 raise Exception(_('Address not in wallet.'))
             key = addr
