@@ -145,7 +145,7 @@ class BaseWizard(Logger):
         ])
         wallet_kinds = [
             ('standard',  _("Standard wallet")),
-            ('2fa', _("Wallet with two-factor authentication")),
+            #('2fa', _("Wallet with two-factor authentication")),
             ('multisig',  _("Multi-signature wallet")),
             ('imported',  _("Import PKT addresses or private keys")),
         ]
@@ -227,7 +227,8 @@ class BaseWizard(Logger):
     def import_addresses_or_keys(self):
         v = lambda x: keystore.is_address_list(x) or keystore.is_private_key_list(x, raise_on_error=True)
         title = _("Import PKT Addresses")
-        message = _("Enter a list of PKT addresses (this will create a watching-only wallet), or a list of private keys.")
+        message = _("Enter a list of PKT addresses (this will create a watching-only wallet), or a list of private keys. " +
+            "NOTE: Addresses which have been used for mining PKT have a large number of transactions, importing them is not yet supported.")
         self.add_xpub_dialog(title=title, message=message, run_next=self.on_import,
                              is_valid=v, allow_multi=True, show_wif_help=True)
 
