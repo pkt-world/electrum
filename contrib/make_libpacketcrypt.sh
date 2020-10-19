@@ -30,6 +30,17 @@ PROJECT_ROOT="$CONTRIB/.."
 pkgname="packetcrypt_dll"
 info "Building $pkgname..."
 
+if command -v cargo ; then
+    CARGO=$(command -v cargo)
+elif [ -f "$HOME/.cargo/bin/cargo" ] ; then
+    CARGO="$HOME/.cargo/bin/cargo"
+else
+    fail "Cargo not found, use rustup to install"
+fi
+
+# fixes undefined reference to `__mingwthr_key_dtor'
+export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS='-lgcc_eh -lmingw32'
+
 (
     cd $CONTRIB
     if [ ! -d packetcrypt_rs ]; then
@@ -45,13 +56,13 @@ info "Building $pkgname..."
     git checkout "${PACKETCRYPT_VERSION}^{commit}"
 
     if [ "$GCC_TRIPLET_HOST" = "i686-w64-mingw32" ] ; then
-        cargo build --release --target i686-pc-windows-gnu
+        $CARGO build --release --target i686-pc-windows-gnu
         cp -fpv "./target/i686-pc-windows-gnu/release/packetcrypt_dll.dll" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
     elif [ "$GCC_TRIPLET_HOST" = "x86_64-w64-mingw32" ] ; then
-        cargo build --release --target i686-pc-windows-gnu
+        $CARGO build --release --target i686-pc-windows-gnu
         cp -fpv "./target/x86_64-pc-windows-gnu/release/packetcrypt_dll.dll" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
     else
-        cargo build --release
+        $CARGO build --release
         cp -fpv "./target/release/libpacketcrypt_dll.so" "$PROJECT_ROOT/electrum" ||
             cp -fpv "./target/release/libpacketcrypt_dll.dylib" "$PROJECT_ROOT/electrum" ||
                 fail "Could not copy the $pkgname binary to its destination"

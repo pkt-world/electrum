@@ -29,6 +29,12 @@ else
     "$CONTRIB"/make_libsecp256k1.sh || fail "Could not build libsecp"
 fi
 
+if [ -f "$PROJECT_ROOT/electrum/packetcrypt_dll.dll" ]; then
+    info "packetcrypt_dll.dll already built, skipping"
+else
+    "$CONTRIB"/make_libpacketcrypt.sh || fail "Could not build packetcrypt"
+fi
+
 $here/prepare-wine.sh || fail "prepare-wine failed"
 
 info "Resetting modification time in C:\Python..."
