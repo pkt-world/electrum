@@ -49,6 +49,7 @@ info "Building $pkgname..."
             --enable-module-recovery \
             --enable-experimental \
             --enable-module-ecdh \
+            --with-bignum=no \
             --disable-benchmark \
             --disable-tests \
             --disable-exhaustive-tests \
