@@ -237,7 +237,7 @@ Use this if you want your local watchtower to keep running after you close your 
         def on_set_updatecheck(v):
             self.config.set_key('check_updates', v == Qt.Checked, save=True)
         updatecheck_cb.stateChanged.connect(on_set_updatecheck)
-        gui_widgets.append((updatecheck_cb, None))
+        #gui_widgets.append((updatecheck_cb, None))
 
         filelogging_cb = QCheckBox(_("Write logs to file"))
         filelogging_cb.setChecked(bool(self.config.get('log_to_file', False)))
