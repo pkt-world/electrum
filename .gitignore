@@ -41,3 +41,6 @@ electrum/*.so
 electrum/*.so.0
 electrum/*.dll
 electrum/*.dylib
+
+# OSX
+.DS_Store

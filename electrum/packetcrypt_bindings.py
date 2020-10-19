@@ -14,16 +14,16 @@ _logger = get_logger(__name__)
 
 def _load_library():
     if sys.platform == 'darwin':
-        library_paths = (os.path.join(os.path.dirname(__file__), 'libpacketcrypt.0.dylib'),
-                         'libpacketcrypt.0.dylib')
+        library_paths = (os.path.join(os.path.dirname(__file__), 'libpacketcrypt_dll.dylib'),
+                         'libpacketcrypt_dll.dylib')
     elif sys.platform in ('windows', 'win32'):
-        library_paths = (os.path.join(os.path.dirname(__file__), 'libpacketcrypt-0.dll'),
-                         'libpacketcrypt-0.dll')
+        library_paths = (os.path.join(os.path.dirname(__file__), 'packetcrypt_dll.dll'),
+                         'packetcrypt_dll.dll')
     elif 'ANDROID_DATA' in os.environ:
-        library_paths = ('libpacketcrypt.so',)
+        library_paths = ('libpacketcrypt_dll.so',)
     else:  # desktop Linux and similar
-        library_paths = (os.path.join(os.path.dirname(__file__), 'libpacketcrypt.so.0'),
-                         'libpacketcrypt.so.0')
+        library_paths = (os.path.join(os.path.dirname(__file__), 'libpacketcrypt_dll.so'),
+                         'libpacketcrypt_dll.so')
 
     exceptions = []
     packetcrypt = None
@@ -39,8 +39,8 @@ def _load_library():
         return None
 
     try:
-        packetcrypt.Validate_checkBlock.restype = c_int
-        packetcrypt.Validate_checkBlock.argtypes = [
+        packetcrypt.pc_Validate_checkBlock.restype = c_int
+        packetcrypt.pc_Validate_checkBlock.argtypes = [
         # int Validate_checkBlock(
             c_char_p, # const PacketCrypt_HeaderAndProof_t* hap,
             c_uint32, # uint32_t hapLen,
@@ -53,19 +53,19 @@ def _load_library():
         # );
         ]
 
-        packetcrypt.Difficulty_getEffectiveTarget.restype = c_uint32
-        packetcrypt.Difficulty_getEffectiveTarget.argtypes = [
+        packetcrypt.pc_get_effective_target.restype = c_uint32
+        packetcrypt.pc_get_effective_target.argtypes = [
             c_uint32, # uint32_t blockTar,
             c_uint32, # uint32_t annTar,
             c_uint64, # uint64_t annCount
         # );
         ]
 
-        packetcrypt.ValidateCtx_create.restype = c_void_p
-        packetcrypt.ValidateCtx_create.argtypes = []
+        packetcrypt.pc_ValidateCtx_create.restype = c_void_p
+        packetcrypt.pc_ValidateCtx_create.argtypes = []
 
-        packetcrypt.Validate_checkBlock_outToString.restype = c_char_p
-        packetcrypt.Validate_checkBlock_outToString.argtypes = [ c_int ]
+        packetcrypt.pc_Validate_checkBlock_outToString.restype = c_char_p
+        packetcrypt.pc_Validate_checkBlock_outToString.argtypes = [ c_int ]
 
         return packetcrypt
     except (OSError, AttributeError) as e:
@@ -77,7 +77,7 @@ _libpacketcrypt = None
 _libpacketcrypt_ctx = None
 try:
     _libpacketcrypt = _load_library()
-    _libpacketcrypt_ctx = _libpacketcrypt.ValidateCtx_create()
+    _libpacketcrypt_ctx = _libpacketcrypt.pc_ValidateCtx_create()
 except BaseException as e:
     _logger.error(f'failed to load libpacketcrypt: {repr(e)}')
 
@@ -135,7 +135,7 @@ def packetcrypt_get_effective_target(target_compact: int, ann_tar_compact: int, 
     bt = c_uint32(target_compact)
     at = c_uint32(ann_tar_compact)
     ac = c_uint64(ann_count)
-    return _libpacketcrypt.Difficulty_getEffectiveTarget(bt, at, ac)
+    return _libpacketcrypt.pcdiff_get_effective_target(bt, at, ac)
 
 # typedef struct {
 #     PacketCrypt_BlockHeader_t blockHeader;
@@ -185,7 +185,7 @@ def packetcrypt_validate(
     if len(joined_hashes) != 32*4:
         raise Exception("unexpected length of ann_header_hashes")
     work_hash_out = b'\0' * 32
-    ret = _libpacketcrypt.Validate_checkBlock(
+    ret = _libpacketcrypt.pc_Validate_checkBlock(
         native_hap, # const PacketCrypt_HeaderAndProof_t* hap,
         c_uint32(len(native_hap)), # uint32_t hapLen,
         c_uint32(height), # uint32_t blockHeight,
@@ -197,5 +197,5 @@ def packetcrypt_validate(
     )
     if ret == 0:
         return rev_hex(work_hash_out.hex())
-    ret_str = _libpacketcrypt.Validate_checkBlock_outToString(ret).decode('utf8')
+    ret_str = _libpacketcrypt.pc_Validate_checkBlock_outToString(ret).decode('utf8')
     raise Exception("PacketCrypt replied: [{}]".format(ret_str))

@@ -117,7 +117,9 @@ brew install autoconf automake libtool
 "$CONTRIB"/make_libsecp256k1.sh || fail "Could not build libsecp"
 cp "$ROOT_FOLDER"/electrum/libsecp256k1.0.dylib contrib/osx
 
-cp "$ROOT_FOLDER"/electrum/libpacketcrypt.0.dylib contrib/osx
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+"$CONTRIB"/make_libpacketcrypt.sh || fail "Could not build packetcrypt"
+cp "$ROOT_FOLDER"/electrum/libpacketcrypt_dll.dylib contrib/osx
 
 info "Building CalinsQRReader..."
 d=contrib/osx/CalinsQRReader
