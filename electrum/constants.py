@@ -159,7 +159,7 @@ class PktMainnet(AbstractNet):
     ADDRTYPE_P2SH = 0x38
     SEGWIT_HRP = "pkt"
     GENESIS = "0bdc1712a46194e552cf417ab0439c2d4f456c35cf63a0a406964c6f93432d85"
-    DEFAULT_PORTS = {'s': '50002'}
+    DEFAULT_PORTS = {'s': '64767'}
     DEFAULT_SERVERS = read_json('servers_pkt.json', {})
     CHECKPOINTS = read_json('checkpoints_pkt.json', [])
 

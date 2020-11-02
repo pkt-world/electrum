@@ -1,17 +1,12 @@
 {
-    "electrumx-01.gridfinity.com": {
+    "pkt-ex.gridfinity.com": {
         "pruning": "-",
-        "s": "50002",
+        "s": "64767",
         "version": "1.2"
     },
-    "electrumx.cjd.li": {
+    "pkt-ex.cjdns.fr": {
         "pruning": "-",
-        "s": "50002",
-        "version": "1.2"
-    },
-    "electrumx.anode.co": {
-        "pruning": "-",
-        "s": "50002",
+        "s": "64767",
         "version": "1.2"
     }
 }
