@@ -78,11 +78,11 @@ async def _check_packetcrypt_proof(
         known_good_headers.add(hash_header(header))
         return pwh
 
-def deduce_tip(chain: Blockchain) -> int:
-    gb = chain.read_header(0)
-    if gb is None: raise Exception("Can't deduce chain tip, don't have genesis block")
-    elapsed_time = int(time.time()) - gb['timestamp']
-    return elapsed_time // 60 # TODO(cjd): 60 is non-portable
+def deduce_tip() -> int:
+    # block number 524288 has timestamp 1597474663, this is a checkpoint in pktd
+    time_since_cpoint = int(time.time()) - 1597474663
+    blocks_since_cpoint = time_since_cpoint // 60
+    return blocks_since_cpoint + 524288
 
 class PacketCrypt:
     def __init__(self):
@@ -102,7 +102,7 @@ class PacketCrypt:
             _logger.info(f"Skipping check for block number {chunk_height} because it might be version 0")
             return
         if self.deduced_tip is None:
-            self.deduced_tip = deduce_tip(chain)
+            self.deduced_tip = deduce_tip()
         if tip is None: tip = self.deduced_tip
         sem = asyncio.Semaphore(8)
         jobs = []
