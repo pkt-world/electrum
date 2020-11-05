@@ -280,10 +280,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.fetch_alias()
 
         # If the option hasn't been set yet
-        if False and config.get('check_updates') is None:
+        if config.get('check_updates') is None:
             choice = self.question(title="PKT Electrum - " + _("Enable update check"),
-                                   msg=_("For security reasons we advise that you always use the latest version of Electrum.") + " " +
-                                       _("Would you like to be notified when there is a newer version of Electrum available?"))
+                                   msg=_("For security reasons we advise that you always use the latest version of PKT Electrum.") + " " +
+                                       _("Would you like to be notified when there is a newer version of PKT Electrum available?"))
             config.set_key('check_updates', bool(choice), save=True)
 
         if config.get('check_updates', False):

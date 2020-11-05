@@ -20,8 +20,8 @@ from electrum.network import Network
 
 
 class UpdateCheck(QDialog, Logger):
-    url = "https://electrum.org/version"
-    download_url = "https://electrum.org/#download"
+    url = "https://gridfinity.com/electrum-version"
+    download_url = "https://gridfinity.com/wallet/#electrum"
 
     VERSION_ANNOUNCEMENT_SIGNING_KEYS = (
         "13xjmVAB1EATPP8RshTE8S8sNwwSUM9p1P",
@@ -116,6 +116,12 @@ class UpdateCheckThread(QThread, Logger):
                 #     }
                 # }
                 version_num = signed_version_dict['version']
+                return StrictVersion(version_num.strip())
+                ## cjd: Signature checking is not really necessary because we're hitting an
+                ## https endpoint and if there is an exploit then the only advantage of not
+                ## being able to sign a version number is the fact that the attacker won't be
+                ## able to convince a large number of people to update to the malicious version
+                ## while they control the domain.
                 sigs = signed_version_dict['signatures']
                 for address, sig in sigs.items():
                     if address not in UpdateCheck.VERSION_ANNOUNCEMENT_SIGNING_KEYS:
