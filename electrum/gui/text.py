@@ -136,7 +136,7 @@ class ElectrumGui:
             else:
                 time_str = 'unconfirmed'
 
-            label = self.wallet.get_label(hist_item.txid)
+            label = self.wallet.get_label_for_txid(hist_item.txid)
             if len(label) > 40:
                 label = label[0:37] + '...'
             self.history.append(format_str % (time_str, label, space_pad_pkt(format_pkt(hist_item.delta)),
@@ -176,7 +176,7 @@ class ElectrumGui:
 
     def print_addresses(self):
         fmt = "%-35s  %-30s"
-        messages = map(lambda addr: fmt % (addr, self.wallet.labels.get(addr,"")), self.wallet.get_addresses())
+        messages = map(lambda addr: fmt % (addr, self.wallet.get_label(addr)), self.wallet.get_addresses())
         self.print_list(messages,   fmt % ("Address", "Label"))
 
     def print_edit_line(self, y, label, text, index, size):
@@ -313,7 +313,7 @@ class ElectrumGui:
             elif out == "Edit label":
                 s = self.get_string(6 + self.pos, 18)
                 if s:
-                    self.wallet.labels[key] = s
+                    self.wallet.set_label(key, s)
 
     def run_banner_tab(self, c):
         self.show_message(repr(c))
@@ -378,7 +378,7 @@ class ElectrumGui:
             return
 
         if self.str_description:
-            self.wallet.labels[tx.txid()] = self.str_description
+            self.wallet.set_label(tx.txid(), self.str_description)
 
         self.show_message(_("Please wait..."), getchar=False)
         try:
