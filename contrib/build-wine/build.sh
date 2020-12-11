@@ -35,6 +35,12 @@ else
     "$CONTRIB"/make_libpacketcrypt.sh || fail "Could not build packetcrypt"
 fi
 
+if [ -f "$PROJECT_ROOT/electrum/libzbar-0.dll" ]; then
+    info "libzbar already built, skipping"
+else
+    "$CONTRIB"/make_zbar.sh || fail "Could not build zbar"
+fi
+
 $here/prepare-wine.sh || fail "prepare-wine failed"
 
 info "Resetting modification time in C:\Python..."
