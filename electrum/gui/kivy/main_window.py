@@ -22,11 +22,11 @@ from electrum.invoices import PR_PAID, PR_FAILED
 from electrum import blockchain
 from electrum.network import Network, TxBroadcastError, BestEffortRequestFailed
 from electrum.interface import PREFERRED_NETWORK_PROTOCOL, ServerAddr
+from electrum.logging import Logger
 from .i18n import _
 
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.logger import Logger
 from kivy.utils import platform
 from kivy.properties import (OptionProperty, AliasProperty, ObjectProperty,
                              StringProperty, ListProperty, BooleanProperty, NumericProperty)
@@ -88,7 +88,7 @@ if TYPE_CHECKING:
     from electrum.paymentrequest import PaymentRequest
 
 
-class ElectrumWindow(App):
+class ElectrumWindow(App, Logger):
 
     electrum_config = ObjectProperty(None)
     language = StringProperty('en')
@@ -229,7 +229,7 @@ class ElectrumWindow(App):
             self._process_invoice_str(invoice_queued)
 
     def on_language(self, instance, language):
-        Logger.info('language: {}'.format(language))
+        self.logger.info('language: {}'.format(language))
         _.switch_lang(language)
 
     def update_history(self, *dt):
@@ -237,12 +237,12 @@ class ElectrumWindow(App):
             self.history_screen.update()
 
     def on_quotes(self, d):
-        Logger.info("on_quotes")
+        self.logger.info("on_quotes")
         self._trigger_update_status()
         self._trigger_update_history()
 
     def on_history(self, d):
-        Logger.info("on_history")
+        self.logger.info("on_history")
         if self.wallet:
             self.wallet.clear_coin_price_cache()
         self._trigger_update_history()
@@ -369,6 +369,7 @@ class ElectrumWindow(App):
         self.password = None
 
         App.__init__(self)#, **kwargs)
+        Logger.__init__(self)
 
         self.electrum_config = config = kwargs.get('config', None)  # type: SimpleConfig
         self.language = config.get('language', 'en')
@@ -557,6 +558,7 @@ class ElectrumWindow(App):
             try:
                 return func(self, *args, **kwargs)
             except Exception as e:
+                self.logger.exception('crash on startup')
                 from .uix.dialogs.crash_reporter import CrashReporter
                 # show the crash reporter, and when it's closed, shutdown the app
                 cr = CrashReporter(self, exctype=type(e), value=e, tb=e.__traceback__)
@@ -569,7 +571,7 @@ class ElectrumWindow(App):
         ''' This is the start point of the kivy ui
         '''
         import time
-        Logger.info('Time to on_start: {} <<<<<<<<'.format(time.process_time()))
+        self.logger.info('Time to on_start: {} <<<<<<<<'.format(time.process_time()))
         Window.bind(size=self.on_size, on_keyboard=self.on_keyboard)
         Window.bind(on_key_down=self.on_key_down)
         #Window.softinput_mode = 'below_target'
@@ -692,7 +694,7 @@ class ElectrumWindow(App):
             self._on_decrypted_storage(storage)
 
     def on_stop(self):
-        Logger.info('on_stop')
+        self.logger.info('on_stop')
         self.stop_wallet()
 
     def stop_wallet(self):
@@ -833,7 +835,7 @@ class ElectrumWindow(App):
         self.update_proxy_str(self.proxy_config)
 
     def on_network_event(self, event, *args):
-        Logger.info('network event: '+ event)
+        self.logger.info('network event: '+ event)
         if event == 'network_updated':
             self._trigger_update_interfaces()
             self._trigger_update_status()
@@ -986,7 +988,7 @@ class ElectrumWindow(App):
             notification.notify('Electrum', message,
                             app_icon=icon, app_name='Electrum')
         except ImportError:
-            Logger.Error('Notification: needs plyer; `sudo python3 -m pip install plyer`')
+            self.logger.Error('Notification: needs plyer; `sudo python3 -m pip install plyer`')
 
     def on_pause(self):
         self.pause_time = time.time()
@@ -1249,7 +1251,7 @@ class ElectrumWindow(App):
         if self.wallet.has_password():
             try:
                 self.wallet.check_password(pw)
-            except:
+            except InvalidPassword:
                 self.show_error("Invalid PIN")
                 return
         self.stop_wallet()
@@ -1351,6 +1353,7 @@ class ElectrumWindow(App):
         try:
             self.wallet.lnbackups.import_channel_backup(encrypted)
         except Exception as e:
+            self.logger.exception("failed to import backup")
             self.show_error("failed to import backup" + '\n' + str(e))
             return
         self.lightning_channels_dialog()
