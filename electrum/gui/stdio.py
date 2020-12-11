@@ -6,6 +6,7 @@ import logging
 from electrum import util
 from electrum import WalletStorage, Wallet
 from electrum.util import format_pkt, space_pad_pkt
+from electrum.wallet_db import WalletDB
 from electrum.bitcoin import is_address, COIN
 from electrum.transaction import PartialTxOutput
 from electrum.network import TxBroadcastError, BestEffortRequestFailed
@@ -30,6 +31,8 @@ class ElectrumGui:
             password = getpass.getpass('Password:', stream=None)
             storage.decrypt(password)
 
+        db = WalletDB(storage.read(), manual_upgrades=False)
+
         self.done = 0
         self.last_balance = ""
 
@@ -40,7 +43,7 @@ class ElectrumGui:
         self.str_amount = ""
         self.str_fee = ""
 
-        self.wallet = Wallet(storage, config=config)
+        self.wallet = Wallet(db, storage, config=config)
         self.wallet.start_network(self.network)
         self.contacts = self.wallet.contacts
 
