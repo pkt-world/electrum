@@ -37,6 +37,7 @@ contrib/build-linux/appimage/build/
 contrib/build-linux/appimage/.cache/
 contrib/android_debug.keystore
 contrib/osx/*.dylib
+contrib/osx/build-venv
 contrib/android/android_debug.keystore
 contrib/secp256k1/
 contrib/zbar/
