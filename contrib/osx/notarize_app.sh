@@ -25,27 +25,27 @@ ditto -c -k --rsrc --keepParent "$APP_BUNDLE" "${APP_BUNDLE}.zip"
 echo "Submitting $APP_BUNDLE for notarization..."
 RESULT=$(xcrun altool --notarize-app --type osx \
   --file "${APP_BUNDLE}.zip" \
-  --primary-bundle-id org.electrum.electrum \
+  --primary-bundle-id li.cjd.electrum \
   --username $APPLE_ID_USER \
   --password @env:APPLE_ID_PASSWORD \
   --output-format xml)
 
 if [ $? -ne 0 ]; then
-  echo "Submitting $APP_BUNDLE failed:"
+  echo "Submitting $APP_BUNDLE failed0:"
   echo "$RESULT"
   exit 1
 fi
 
-REQUEST_UUID=$(echo "$RESULT" | xpath \
+REQUEST_UUID=$(echo "$RESULT" | xpath -e \
   "//key[normalize-space(text()) = 'RequestUUID']/following-sibling::string[1]/text()" 2> /dev/null)
 
 if [ -z "$REQUEST_UUID" ]; then
-  echo "Submitting $APP_BUNDLE failed:"
+  echo "Submitting $APP_BUNDLE failed1:"
   echo "$RESULT"
   exit 1
 fi
 
-echo "$(echo "$RESULT" | xpath \
+echo "$(echo "$RESULT" | xpath -e \
   "//key[normalize-space(text()) = 'success-message']/following-sibling::string[1]/text()" 2> /dev/null)"
 
 # Poll for notarization status
@@ -57,7 +57,7 @@ do
     --username "$APPLE_ID_USER" \
     --password @env:APPLE_ID_PASSWORD \
     --output-format xml)
-  STATUS=$(echo "$RESULT" | xpath \
+  STATUS=$(echo "$RESULT" | xpath -e \
     "//key[normalize-space(text()) = 'Status']/following-sibling::string[1]/text()" 2> /dev/null)
 
   if [ "$STATUS" = "success" ]; then
