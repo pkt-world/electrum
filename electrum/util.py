@@ -814,13 +814,20 @@ testnet_block_explorers = {
                        {'tx': 'tx/', 'addr': 'address/'}),
 }
 
+pkt_block_explorers = {
+    'explorer.pkt.cash': ('https://explorer.pkt.cash/',
+                    {'tx': 'tx/', 'addr': 'address/'}),
+}
+
 def block_explorer_info():
     from . import constants
+    if constants.net.SEGWIT_HRP == 'pkt': return pkt_block_explorers
     return mainnet_block_explorers if not constants.net.TESTNET else testnet_block_explorers
 
 def block_explorer(config: 'SimpleConfig') -> str:
     from . import constants
     default_ = 'Blockstream.info'
+    if constants.net.SEGWIT_HRP == 'pkt': default_ = 'explorer.pkt.cash'
     be_key = config.get('block_explorer', default_)
     be = block_explorer_info().get(be_key)
     return be_key if be is not None else default_
