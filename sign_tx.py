@@ -49,7 +49,16 @@ def wallet(ks0):
         print("WARNING: Your pubkey does not appear in the multisig group")
     return Multisig_Wallet(ws)
 
-def password_stretch(password):
+def password_stretch(password, config):
+    if 'password_stretch' in config:
+        if config['password_stretch'] == 'pbkdf2':
+            return hashlib.pbkdf2_hmac(
+                'sha256',
+                password.encode('utf-8'),
+                b'pass',
+                100000
+            ).hex()
+        raise TypeError("unknown password hash type " + str(config['password_stretch']))
     return hashlib.scrypt(
         password.encode('utf-8'),
         salt=b'pass',
@@ -64,32 +73,107 @@ def outfile_exists(file):
         print(file + " already exists, I'm not confident enough to overwrite it")
         return True
 
-def combine_transactions(transaction_bin, outfile):
+def combiner(txcount, transactions_bin, cnum, numCombiners, f):
+    for txnum in range(0,txcount):
+        if txnum % numCombiners != cnum:
+          continue
+        logheader = "[" + str(cnum) + "] Merging " + str(txnum) + "/" + str(txcount)
+        print(logheader)
+        transactions = []
+        for i in range(0,len(transactions_bin)):
+            print(logheader + " Parsing transaction " + str(i+1) + "/" + str(len(transactions_bin)))
+            txb64 = transactions_bin[i][txnum]
+            txhex = codecs.encode(codecs.decode(txb64.encode(), 'base64'), 'hex').decode()
+            tx = Transaction(tx_from_str(txhex))
+            tx.inputs()
+            transactions.append(tx)
+        tx0 = transactions[0]
+        print(logheader + " Deserializing transaction")
+        tx0.deserialize(True)
+        txn = 0
+        for tx in transactions[1:]:
+            i = 0
+            print(logheader + " Copying signatures from from transaction " + str(txn))
+            txn += 1
+            for txin in tx.inputs():
+                #print("      From input " + str(i))
+                signingPos = 0
+                for sig in txin['signatures']:
+                    if sig != None:
+                        tx0.add_signature_to_txin(i, signingPos, sig)
+                    signingPos += 1
+                i += 1
+        res = tx0.serialize_to_network()
+        f.write(codecs.encode(codecs.decode(res, 'hex'), 'base64').decode().replace("\n", "") + '\n')
+
+def multi_combine(transactions_bin, outfile, config):
     if outfile_exists(outfile): return
-    print("Parsing transactions")
-    transactions = []
-    for i in range(0,len(transaction_bin)):
-      print("Parsing transaction " + str(i))
-      transactions.append(Transaction(tx_from_str(transaction_bin[i])))
-    tx0 = transactions[0]
-    print("Deserializing transaction 0")
-    tx0.deserialize(True)
-    print("Copying signatures")
-    txn = 0
-    for tx in transactions[1:]:
-        i = 0
-        print("  From transaction " + str(txn))
-        txn += 1
-        for txin in tx.inputs():
-            print("    From input " + str(i))
-            signingPos = 0
-            for sig in txin['signatures']:
-                if sig != None:
-                    tx0.add_signature_to_txin(i, signingPos, sig)
-                signingPos += 1
-            i += 1
     f = open(outfile, 'w')
-    f.write(tx0.serialize_to_network())
+    print("Parsing transactions")
+    txcount = None
+    for i in range(0,len(transactions_bin)):
+        if txcount != None and txcount != len(transactions_bin[i]):
+            print("WARNING: file " + str(i) + " has " + str(len(transactions_bin[i])) +
+                " transactions but " + str(i-1) + " has " + str(txcount))
+        txcount = len(transactions_bin[i])
+        transactions_bin[i].sort()
+    numsigners = 2
+    if 'numsigners' in config:
+        numsigners = config['numsigners']
+    pids = []
+    for x in range(0,numsigners):
+        print("Forking combiner number " + str(x))
+        newpid = os.fork()
+        if newpid == 0:
+              combiner(txcount, transactions_bin, x, numsigners, f)
+              print("[" + str(x) + "] Done")
+              sys.exit(0)
+        pids.append(newpid)
+    for pid in pids:
+        os.waitpid(pid, 0)
+    f.close()
+    print("Result written to " + outfile)
+
+def combine_transactions(transactions_bin, outfile):
+    if outfile_exists(outfile): return
+    f = open(outfile, 'w')
+    print("Parsing transactions")
+    txcount = None
+    for i in range(0,len(transactions_bin)):
+        if txcount != None and txcount != len(transactions_bin[i]):
+            print("WARNING: file " + str(i) + " has " + str(len(transactions_bin[i])) +
+                " transactions but " + str(i-1) + " has " + str(txcount))
+        txcount = len(transactions_bin[i])
+        transactions_bin[i].sort()
+    for txnum in range(0,txcount):
+        print("Merging " + str(txnum) + "/" + str(txcount))
+        transactions = []
+        for i in range(0,len(transactions_bin)):
+            print("  Parsing transaction " + str(i) + "/" + str(len(transactions_bin)))
+            txb64 = transactions_bin[i][txnum]
+            txhex = codecs.encode(codecs.decode(txb64.encode(), 'base64'), 'hex').decode()
+            tx = Transaction(tx_from_str(txhex))
+            tx.inputs()
+            transactions.append(tx)
+        tx0 = transactions[0]
+        print("  Deserializing transaction 0")
+        tx0.deserialize(True)
+        print("  Copying signatures")
+        txn = 0
+        for tx in transactions[1:]:
+            i = 0
+            print("    From transaction " + str(txn))
+            txn += 1
+            for txin in tx.inputs():
+                #print("      From input " + str(i))
+                signingPos = 0
+                for sig in txin['signatures']:
+                    if sig != None:
+                        tx0.add_signature_to_txin(i, signingPos, sig)
+                    signingPos += 1
+                i += 1
+        res = tx0.serialize_to_network()
+        f.write(codecs.encode(codecs.decode(res, 'hex'), 'base64').decode().replace("\n", "") + '\n')
     f.close()
     print("Result written to " + outfile)
 
@@ -116,7 +200,7 @@ def sign_txns(config, txns, outfile):
     print("You can now safely remove your external storage containing the seed file")
     print("Creating wallet")
     w = wallet(ks)
-    key = password_stretch(passwd)
+    key = password_stretch(passwd, config)
     f = open(outfile, 'w')
     numsigners = 2
     if 'numsigners' in config:
@@ -178,7 +262,7 @@ def configure_seed(config):
             continue
         break
     ks0 = keystore.from_seed(seed, '', True)
-    ks0.update_password(None, password_stretch(passwd))
+    ks0.update_password(None, password_stretch(passwd, config))
     f = open(config['seedpath'], 'w')
     f.write(json.dumps(ks0.dump()))
     f.close()
@@ -214,7 +298,7 @@ def mk_config():
     if seedpath == "":
         seedpath = input("Please type the path to your seed file: ")
     f = open(CONFIG_FILE, 'w')
-    f.write(json.dumps({ 'name': name, 'seedpath': seedpath }))
+    f.write(json.dumps({ 'name': name, 'seedpath': seedpath, 'password_stretch': 'pbkdf2' }))
     f.close()
     print("Thanks, now I will now continue as normal")
     print()
@@ -229,9 +313,12 @@ def main():
         txs = []
         for i in range(2,len(sys.argv)-1):
             with open(sys.argv[i], 'r') as file:
-                print("Reading transaction from " + sys.argv[i])
-                txs.append( file.read().replace('\n', '') )
-        combine_transactions(txs, sys.argv[len(sys.argv)-1])
+                print("Reading transactions from " + sys.argv[i])
+                lines = file.read().splitlines()
+                txs.append(lines)
+        #combine_transactions(txs, sys.argv[len(sys.argv)-1])
+        multi_combine(txs, sys.argv[len(sys.argv)-1], config)
+        return
     if len(sys.argv) == 3 and sys.argv[1] == 'sign':
         if len(sys.argv) < 3:
             usage()
