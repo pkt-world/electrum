@@ -125,13 +125,23 @@ class TestUtil(ElectrumTestCase):
 
     def test_is_hex_str(self):
         self.assertTrue(is_hex_str('09a4'))
+        self.assertTrue(is_hex_str('abCD'))
         self.assertTrue(is_hex_str('2A5C3F4062E4F2FCCE7A1C7B4310CB647B327409F580F4ED72CB8FC0B1804DFA'))
         self.assertTrue(is_hex_str('00' * 33))
 
+        self.assertFalse(is_hex_str('0x09a4'))
+        self.assertFalse(is_hex_str('2A 5C3F'))
+        self.assertFalse(is_hex_str(' 2A5C3F'))
+        self.assertFalse(is_hex_str('2A5C3F '))
         self.assertFalse(is_hex_str('000'))
+        self.assertFalse(is_hex_str('123'))
+        self.assertFalse(is_hex_str('0x123'))
         self.assertFalse(is_hex_str('qweqwe'))
+        self.assertFalse(is_hex_str(b'09a4'))
+        self.assertFalse(is_hex_str(b'\x09\xa4'))
         self.assertFalse(is_hex_str(None))
         self.assertFalse(is_hex_str(7))
+        self.assertFalse(is_hex_str(7.2))
 
     def test_is_integer(self):
         self.assertTrue(is_integer(7))
@@ -221,7 +231,7 @@ class TestUtil(ElectrumTestCase):
 
     def test_is_ip_address(self):
         self.assertTrue(is_ip_address("127.0.0.1"))
-        self.assertTrue(is_ip_address("127.000.000.1"))
+        #self.assertTrue(is_ip_address("127.000.000.1"))  # disabled as result differs based on python version
         self.assertTrue(is_ip_address("255.255.255.255"))
         self.assertFalse(is_ip_address("255.255.256.255"))
         self.assertFalse(is_ip_address("123.456.789.000"))
