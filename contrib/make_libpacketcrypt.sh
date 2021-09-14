@@ -52,7 +52,7 @@ export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS='-lgcc_eh -lmingw32'
         git fetch --all
     fi
     git reset --hard
-    git clean -f -x -q
+    git clean -d -f -x -q
     git checkout "${PACKETCRYPT_VERSION}^{commit}"
 
     if [ "$GCC_TRIPLET_HOST" = "i686-w64-mingw32" ] ; then
