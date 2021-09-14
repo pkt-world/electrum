@@ -868,6 +868,7 @@ def block_explorer(config: 'SimpleConfig') -> Optional[str]:
     """
     if config.get('block_explorer_custom') is not None:
         return None
+    from . import constants
     default_ = 'Blockstream.info'
     if constants.net.NET_NAME == 'pkt': default_ = 'explorer.pkt.cash'
     be_key = config.get('block_explorer', default_)
