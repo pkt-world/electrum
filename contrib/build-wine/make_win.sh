@@ -41,6 +41,12 @@ rm "$here"/dist/* -rf
 
 mkdir -p "$CACHEDIR" "$DLL_TARGET_DIR" "$PIP_CACHE_DIR"
 
+if [ -f "$DLL_TARGET_DIR/packetcrypt_dll.dll" ]; then
+    info "packetcrypt_dll already built, skipping"
+else
+    "$CONTRIB"/make_libpacketcrypt.sh || fail "Could not build packetcrypt"
+fi
+
 if [ -f "$DLL_TARGET_DIR/libsecp256k1-0.dll" ]; then
     info "libsecp256k1 already built, skipping"
 else
