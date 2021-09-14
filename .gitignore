@@ -51,3 +51,4 @@ electrum/*.dylib
 # OSX
 .DS_Store
 contrib/osx/*.dylib
+contrib/packetcrypt_rs
