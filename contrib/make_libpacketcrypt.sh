@@ -17,7 +17,7 @@
 # $ sudo apt-get install mingw-w64
 # $ GCC_TRIPLET_HOST="x86_64-w64-mingw32" ./contrib/make_libsecp256k1.sh
 
-PACKETCRYPT_VERSION="5d240005c5df2304b3d1312a00b9c4f4d8220e5e"
+PACKETCRYPT_VERSION="3d3c274fae43d71059cf61b157aa284f0768e2b1"
 
 set -e
 
