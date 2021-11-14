@@ -20,8 +20,8 @@ from electrum.network import Network
 
 
 class UpdateCheck(QDialog, Logger):
-    url = "https://gridfinity.com/electrum-version"
-    download_url = "https://gridfinity.com/wallet/#electrum"
+    url = "https://pkt.cash/electrum-version"
+    download_url = "https://pkt.cash/electrum-download"
 
     VERSION_ANNOUNCEMENT_SIGNING_KEYS = (
         "13xjmVAB1EATPP8RshTE8S8sNwwSUM9p1P",  # ThomasV (since 3.3.4)

@@ -2239,10 +2239,11 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         super().add_verified_tx(tx_hash, info)
         self._update_request_statuses_touched_by_tx(tx_hash)
 
-    def undo_verifications(self, blockchain, above_height):
+    def undo_verifications(self, blockchain, above_height) -> Set[str]:
         reorged_txids = super().undo_verifications(blockchain, above_height)
         for txid in reorged_txids:
             self._update_request_statuses_touched_by_tx(txid)
+        return reorged_txids
 
     def _update_request_statuses_touched_by_tx(self, tx_hash: str) -> None:
         # FIXME in some cases if tx2 replaces unconfirmed tx1 in the mempool, we are not called.
