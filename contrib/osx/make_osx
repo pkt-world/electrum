@@ -67,7 +67,6 @@ function DoCodeSignMaybe { # ARGS: infoName fileOrDirName
     codesign -f -v $deep -s "$CODESIGN_CERT" $hardened_arg "$file" || fail "Could not code sign ${infoName}"
 }
 
-function InstallPython {
 info "Installing Python $PYTHON_VERSION"
 PKG_FILE="python-${PYTHON_VERSION}-macosx10.9.pkg"
 if [ ! -f "$CACHEDIR/$PKG_FILE" ]; then
