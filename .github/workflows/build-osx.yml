@@ -1,19 +1,65 @@
 name: OSX Build
 on: [push]
 jobs:
-  BigSur:
-    runs-on: macos-11
+  build_with_signing:
+    runs-on: macos-latest
     steps:
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: Check out repository code
         uses: actions/checkout@v2
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+
+      - name: Set env
+        run: |
+          echo "VERSION=$(git describe --tags --dirty --always)" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Show build report
+        run: |
+          echo "📜 The build version is $VERSION."
+          echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+          echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+          echo "🖥️ The workflow is now ready to test your code on the runner."
+
+      - name: "Load signing certificate"
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        run: |
+          echo "create variables"
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=temp_keychain_password_could_be_anything
+
+          echo "save cert to file"
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+
+          echo "create temporary keychain"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          echo "import certificate to keychain"
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
       - name: Run make_osx builder
-        run: cd ${{ github.workspace }} && ./contrib/osx/make_osx
-      - name: Upload result
+        env:
+          CODESIGN_CERT: ${{ secrets.CODESIGN_CERT }}
+          APPLE_ID_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_NOTARIZE_PASS }}
+        run: |
+          cd ${{ github.workspace }}
+          ./contrib/osx/make_osx
+
+        - name: Upload result
         uses: actions/upload-artifact@v2
         with:
-          name: pkt-electrum-dmg
-          path: dist/pkt-electrum-*.dmg
+          name: pkt-electrum-${{ env.VERSION }}.dmg
+          path: ${{ github.workspace }}/dist/pkt-electrum-*.dmg
+
+      - name: Release Electrum PKT wallet installer for osx
+        run: /bin/bash -c "source $GITHUB_WORKSPACE/.github/workflows/release/release-osx-installer.sh"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NAME: ${{ env.RELEASE_NAME }}
+
       - run: echo "🍏 This job's status is ${{ job.status }}."
