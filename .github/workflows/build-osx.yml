@@ -30,6 +30,7 @@ jobs:
           KEYCHAIN_PASSWORD=temp_keychain_password_could_be_anything
 
           echo "save cert to file"
+          echo -n "$BUILD_CERTIFICATE_BASE64" | wc -c
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
 
           echo "create temporary keychain"
