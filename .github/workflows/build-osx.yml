@@ -3,6 +3,7 @@ on: [push]
 jobs:
   build_with_signing:
     runs-on: macos-11
+    environment: apple_signing
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
