@@ -49,7 +49,7 @@ jobs:
           APPLE_ID_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_NOTARIZE_PASS }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: "$GITHUB_WORKSPACE/.github/workflows/release/build_osx.sh"
+        run: "$GITHUB_WORKSPACE/.github/workflows/scripts/build_osx.sh"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
