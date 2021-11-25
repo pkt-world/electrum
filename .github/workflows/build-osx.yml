@@ -1,5 +1,5 @@
 name: OSX Build
-on: [push]
+on: [push,create]
 jobs:
   build_with_signing:
     runs-on: macos-11
