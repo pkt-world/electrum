@@ -38,6 +38,15 @@ else
     fail "Cargo not found, use rustup to install"
 fi
 
+echo "Rust installed targets"
+if command -v cargo ; then
+    rustup target list --installed
+elif [ -f "$HOME/.cargo/bin/rustup" ] ; then
+    "$HOME/.cargo/bin/rustup" target list --installed
+else
+    fail "Rustup not found, use rustup to install"
+fi
+
 # fixes undefined reference to `__mingwthr_key_dtor'
 export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS='-lgcc_eh -lmingw32'
 
@@ -55,6 +64,7 @@ export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS='-lgcc_eh -lmingw32'
     git clean -d -f -x -q
     git checkout "${PACKETCRYPT_VERSION}^{commit}"
 
+    echo "GCC_TRIPLE_HOST is: ${GCC_TRIPLET_HOST}"
     if [ "$GCC_TRIPLET_HOST" = "i686-w64-mingw32" ] ; then
         $CARGO build --release --target i686-pc-windows-gnu --features portable
         cp -fpv "./target/i686-pc-windows-gnu/release/packetcrypt_dll.dll" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
