@@ -59,7 +59,7 @@ export CARGO_TARGET_I686_PC_WINDOWS_GNU_RUSTFLAGS='-lgcc_eh -lmingw32'
         $CARGO build --release --target i686-pc-windows-gnu --features portable
         cp -fpv "./target/i686-pc-windows-gnu/release/packetcrypt_dll.dll" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
     elif [ "$GCC_TRIPLET_HOST" = "x86_64-w64-mingw32" ] ; then
-        $CARGO build --release --target i686-pc-windows-gnu --features portable
+        $CARGO build --release --target x86_64-pc-windows-gnu --features portable
         cp -fpv "./target/x86_64-pc-windows-gnu/release/packetcrypt_dll.dll" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
     else
         $CARGO build --release --features portable
