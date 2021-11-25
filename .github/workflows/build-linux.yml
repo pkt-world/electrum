@@ -4,6 +4,7 @@ jobs:
   pkt-electrum-linux-builder:
     # if: "contains(github.event.commits[0].message, 'REBUILD_DOCKER')" need?
     runs-on: ubuntu-latest
+    environment: docker_creds
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -29,6 +30,7 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
+    environment: docker_creds
     needs: pkt-electrum-linux-builder
     services:
       electrum-wallet:
