@@ -43,25 +43,24 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-      - name: Run make_osx builder
+      - name: Run osx builder
         env:
           CODESIGN_CERT: ${{ secrets.CODESIGN_CERT }}
           APPLE_ID_USER: ${{ secrets.APPLE_NOTARIZE_USER }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_NOTARIZE_PASS }}
-        run: |
-          cd ${{ github.workspace }}
-          ./contrib/osx/make_osx
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: "$GITHUB_WORKSPACE/.github/workflows/release/build_osx.sh"
 
-      - name: Upload result
+      - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: pkt-electrum-${{ env.VERSION }}.dmg
           path: ${{ github.workspace }}/dist/pkt-electrum-*.dmg
 
-      - name: Release Electrum PKT wallet installer for osx
-        run: /bin/bash -c "source $GITHUB_WORKSPACE/.github/workflows/release/release-osx-installer.sh"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NAME: ${{ env.RELEASE_NAME }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/pkt-electrum-*.dmg
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
