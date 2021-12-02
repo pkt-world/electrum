@@ -42,6 +42,10 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v2
 
+      - name: Set env
+        run: |
+          echo "VERSION=$(git describe --tags --dirty --always)" >> $GITHUB_ENV
+
       - name: Make App Image
         uses: addnab/docker-run-action@v3
         with:
