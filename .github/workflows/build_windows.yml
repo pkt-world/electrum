@@ -60,7 +60,7 @@ jobs:
 
       - uses: actions/upload-artifact@main
         with:
-          path: contrib/build-wine/dist/electrum-${{ env.VERSION }}-setup.exe
+          path: contrib/build-wine/dist/*.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
