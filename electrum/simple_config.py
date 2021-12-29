@@ -130,6 +130,7 @@ class SimpleConfig(Logger):
             make_dir(path, allow_symlink=False)
         elif self.get('pkt'):
             path = os.path.join(path, 'pkt')
+            make_dir(path, allow_symlink=False)
         elif self.get('signet'):
             path = os.path.join(path, 'signet')
             make_dir(path, allow_symlink=False)
